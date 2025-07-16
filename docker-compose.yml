@@ -1,0 +1,38 @@
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpwd
+      POSTGRES_DB: litellm_examples
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  litellm:
+    build:
+      context: .
+      args:
+        target: runtime
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml
+    environment:
+      - LITELLM_LOG=ERROR
+      - LITELLM_MASTER_KEY=sk-1234
+      - LITELLM_SALT_KEY=sk-1234
+      - STORE_MODEL_IN_DB=True
+      - DATABASE_URL=postgresql://root:rootpwd@postgres:5432/litellm_examples
+      - REDIS_URL=redis://redis:6379
+    command: [ "--config", "/app/config.yaml", "--port", "4000", "--num_workers", "8" ]
+
